@@ -1,0 +1,111 @@
+---
+title: "Plots pheno"
+author: "Pabitra"
+date: "2023-11-2"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+##Structural Equation Modeling (SEM) for Phenotypic Data(Structural Equation Modeling (SEM) is used to analyze relationships between observed and latent variables.)
+```{r}
+
+# Load necessary libraries for SEM
+library(openxlsx)
+library(semPlot)
+library(lavaan)
+
+# Load data
+mydata <- read.xlsx("Gp502springwheat.xlsx", sheet = 2)
+
+# Define the SEM model
+model <- 'YD ~ PH + SN + SL + TW + TKW'
+
+# Fit the model
+fit <- cfa(model, data = mydata)
+
+# Plot SEM path diagram
+semPaths(fit, 'std', layout = 'circle')
+
+```
+
+##Principal Component Analysis (PCA) for Phenotypic Data
+```{r}
+# Load necessary libraries for PCA
+library(FactoMineR)
+library(factoextra)
+
+# Load data
+mydata <- read.xlsx("Gp502springwheat.xlsx", sheet = 2)
+
+# Perform PCA analysis
+pca <- PCA(mydata[, 3:8], graph = FALSE)
+
+# Visualize PCA results with variable contributions
+fviz_pca_var(pca, geom.ind = "point", col.ind = mydata$Env, 
+             palette = c("red", "blue"), addEllipses = TRUE, repel = TRUE, col.var = "contrib")
+
+
+```
+
+##Validation with Box Plots
+```{r}
+
+# Load necessary libraries for plotting
+library(openxlsx)
+library(ggplot2)
+library(ggpubr)
+
+# Load  data
+mydata <- read.xlsx("Gp502springwheat.xlsx", sheet = 3)
+
+# Create box plots with statistical comparison
+p1 <- ggplot(data = remove_missing(mydata4, na.rm = TRUE), aes(x = Marker1, y = YLD, fill = Marker1)) +
+      geom_boxplot() + theme(legend.position = "None") +
+      stat_compare_means(method = "kruskal.test", label.y = 75, label = "p.format") +
+      labs(x = "Marker1")
+
+# Similarly, create more plots (p2 to p10) for other markers
+# Combine all plots into one figure
+ggarrange(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, ncol = 2, nrow = 5)
+
+
+```
+
+
+###Correlation plot
+
+```{r}
+
+# Load necessary libraries for correlation analysis
+library(openxlsx)
+library(corrplot)
+
+# Load the dataset
+mydata <- read.xlsx("Gp502springwheat.xlsx", sheet = 2)
+
+# Compute correlation matrix
+M <- cor(mydata[, 3:8])
+
+# Function to calculate p-values for correlations
+cor.mtest <- function(mat) {
+  mat <- as.matrix(mat)
+  n <- ncol(mat)
+  p.mat <- matrix(NA, n, n)
+  for (i in 1:(n - 1)) {
+    for (j in (i + 1):n) {
+      tmp <- cor.test(mat[, i], mat[, j])
+      p.mat[i, j] <- p.mat[j, i] <- tmp$p.value
+    }
+  }
+  return(p.mat)
+}
+
+# Generate correlation plot with p-values
+p.mat <- cor.mtest(mydata[, 3:8])
+corrplot(M, method = "color", addCoef.col = "black", tl.col = "black", tl.srt = 45)
+
+```
